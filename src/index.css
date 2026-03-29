@@ -1,8 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=UnifrakturMaguntia&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-serif: "Libre Baskerville", serif;
   --font-sans: "Inter", sans-serif;
+  --font-gothic: "UnifrakturMaguntia", cursive;
 }
 
 @layer base {
@@ -17,8 +19,20 @@
 }
 
 .parchment-card {
-  @apply bg-[#fdfaf6] border border-[#d1c7b7] shadow-lg rounded-sm relative;
+  @apply bg-[#f5eeda] border border-[#d1c7b7] shadow-lg rounded-sm relative;
   background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+}
+
+.pdf-capture {
+  width: 800px !important;
+  margin: 0 !important;
+  padding: 40px !important;
+  box-shadow: none !important;
+  border: 2px solid #3d332a !important;
+}
+
+.pdf-capture::before {
+  display: none !important;
 }
 
 .parchment-card::before {

@@ -75,6 +75,10 @@ export const COMMON_SKILLS = [
 ];
 
 export const SEX_OPTIONS = ["Male", "Female", "Other"];
+export const ETHNICITY_OPTIONS = ["English", "French", "German", "Russian", "Spanish", "Italian", "Austrian", "Ottoman", "American", "Dutch"];
+export const RELIGION_OPTIONS = ["Orthodox", "Catholic", "Protestant", "Anglican", "Muslim", "Jewish", "Atheist", "Deist"];
+export const HANDEDNESS_OPTIONS = ["Right", "Left", "Ambidextrous"];
+export const ALIGNMENT_OPTIONS = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"];
 
 export const HISTORICAL_NAMES = {
   Male: [

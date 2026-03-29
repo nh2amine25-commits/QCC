@@ -19,7 +19,7 @@ import {
   Dices,
   Sparkles
 } from 'lucide-react';
-import { AGE_TABLE, INITIAL_APTITUDES, MAX_APTITUDE, MAX_SKILL_LEVEL, XP_COSTS, STARTING_SKILLS, COMMON_SKILLS, HISTORICAL_NAMES, SEX_OPTIONS } from './constants';
+import { AGE_TABLE, INITIAL_APTITUDES, MAX_APTITUDE, MAX_SKILL_LEVEL, XP_COSTS, STARTING_SKILLS, COMMON_SKILLS, HISTORICAL_NAMES, SEX_OPTIONS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, HANDEDNESS_OPTIONS, ALIGNMENT_OPTIONS } from './constants';
 import { AgeCategory, Character, Skill } from './types';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -34,10 +34,14 @@ export default function App() {
   const [char, setChar] = useState<Character>({
     name: '',
     sex: 'Male',
+    age: 25,
+    ethnicity: 'English',
+    religion: 'Orthodox',
     ageCategory: 'Young Adult',
     aptitudes: { ...INITIAL_APTITUDES },
     skills: [...STARTING_SKILLS],
     quickReloadPoints: 0,
+    handedness: 'Right',
     spentXP: 0,
     totalXP: AGE_TABLE['Young Adult'].xp,
     wealth: AGE_TABLE['Young Adult'].wealth,
@@ -57,13 +61,21 @@ export default function App() {
 
   const handleRandomName = () => {
     const { name, sex } = generateRandomName();
-    setChar(prev => ({ ...prev, name, sex }));
+    setChar(prev => ({ 
+      ...prev, 
+      name, 
+      sex,
+      ethnicity: ETHNICITY_OPTIONS[Math.floor(Math.random() * ETHNICITY_OPTIONS.length)],
+      religion: RELIGION_OPTIONS[Math.floor(Math.random() * RELIGION_OPTIONS.length)],
+      handedness: HANDEDNESS_OPTIONS[Math.floor(Math.random() * HANDEDNESS_OPTIONS.length)],
+      age: Math.floor(Math.random() * 20) + 18
+    }));
   };
 
   const generateFullCharacter = () => {
     const ages = Object.keys(AGE_TABLE) as AgeCategory[];
-    const randomAge = ages[Math.floor(Math.random() * ages.length)];
-    const ageStats = AGE_TABLE[randomAge];
+    const randomAgeCat = ages[Math.floor(Math.random() * ages.length)];
+    const ageStats = AGE_TABLE[randomAgeCat];
     const { name, sex } = generateRandomName();
     
     // Randomize Aptitudes
@@ -121,10 +133,14 @@ export default function App() {
     setChar({
       name,
       sex,
-      ageCategory: randomAge,
+      age: Math.floor(Math.random() * 20) + 18,
+      ethnicity: ETHNICITY_OPTIONS[Math.floor(Math.random() * ETHNICITY_OPTIONS.length)],
+      religion: RELIGION_OPTIONS[Math.floor(Math.random() * RELIGION_OPTIONS.length)],
+      ageCategory: randomAgeCat,
       aptitudes: apts,
       skills: skills,
       quickReloadPoints: reloads,
+      handedness: HANDEDNESS_OPTIONS[Math.floor(Math.random() * HANDEDNESS_OPTIONS.length)],
       spentXP: spent,
       totalXP: ageStats.xp,
       wealth: ageStats.wealth
@@ -255,21 +271,25 @@ export default function App() {
     dossierRef.current.classList.add('pdf-capture');
     
     try {
+      // Wait a bit for the class to apply and layout to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const canvas = await html2canvas(dossierRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#fdfaf6',
-        logging: false
+        backgroundColor: '#f5eeda',
+        logging: false,
+        windowWidth: 800
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width, canvas.height]
+        format: [canvas.width / 2, canvas.height / 2]
       });
       
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / 2, canvas.height / 2);
       pdf.save(`${char.name.replace(/\s+/g, '_') || 'Character'}_Iron_and_Blood.pdf`);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
@@ -284,9 +304,9 @@ export default function App() {
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-20">
           <Shield size={120} className="text-[#3d332a]" />
         </div>
-        <h1 className="text-6xl md:text-7xl mb-4 tracking-tighter text-[#3d332a] font-serif italic">Iron and Blood</h1>
+        <h1 className="text-6xl md:text-7xl mb-4 tracking-tighter text-[#3d332a] font-serif italic">Iron & Blood</h1>
         <p className="text-xs uppercase tracking-[0.4em] text-[#8e7f6d] font-bold">
-          Character Creation Protocol — 1500–1875
+          Quick Character Creator
         </p>
         <div className="flex justify-center items-center gap-4 mt-8">
           <div className="h-px bg-[#d1c7b7] flex-1 max-w-[100px]" />
@@ -323,7 +343,6 @@ export default function App() {
                         type="text" 
                         value={char.name}
                         onChange={e => setChar(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="e.g. Captain Horace Vernet"
                         className="text-2xl font-serif italic bg-transparent border-b border-[#d1c7b7] focus:border-[#5a5a40] outline-none py-2"
                       />
                     </div>
@@ -336,13 +355,71 @@ export default function App() {
                             key={option}
                             onClick={() => setChar(prev => ({ ...prev, sex: option }))}
                             className={cn(
-                              "flex items-center justify-center rounded border transition-all text-sm font-serif italic",
+                              "flex items-center justify-center rounded border transition-all text-sm font-serif italic py-2",
                               char.sex === option 
                                 ? "bg-[#5a5a40] border-[#5a5a40] text-white" 
                                 : "bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
                             )}
                           >
                             {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs uppercase tracking-wider font-bold text-[#8e7f6d]">Ethnicity</label>
+                        <button 
+                          onClick={() => setChar(prev => ({ ...prev, ethnicity: ETHNICITY_OPTIONS[Math.floor(Math.random() * ETHNICITY_OPTIONS.length)] }))}
+                          className="text-[10px] uppercase tracking-tighter text-[#5a5a40] hover:underline flex items-center gap-1"
+                        >
+                          <RotateCcw size={10} /> Random
+                        </button>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={char.ethnicity}
+                        onChange={e => setChar(prev => ({ ...prev, ethnicity: e.target.value }))}
+                        className="bg-white border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
+                      />
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs uppercase tracking-wider font-bold text-[#8e7f6d]">Religion</label>
+                        <button 
+                          onClick={() => setChar(prev => ({ ...prev, religion: RELIGION_OPTIONS[Math.floor(Math.random() * RELIGION_OPTIONS.length)] }))}
+                          className="text-[10px] uppercase tracking-tighter text-[#5a5a40] hover:underline flex items-center gap-1"
+                        >
+                          <RotateCcw size={10} /> Random
+                        </button>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={char.religion}
+                        onChange={e => setChar(prev => ({ ...prev, religion: e.target.value }))}
+                        className="bg-white border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
+                      />
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <label className="text-xs uppercase tracking-wider font-bold text-[#8e7f6d]">Handedness</label>
+                      <div className="grid grid-cols-3 gap-1">
+                        {HANDEDNESS_OPTIONS.map(opt => (
+                          <button
+                            key={opt}
+                            onClick={() => setChar(prev => ({ ...prev, handedness: opt }))}
+                            className={cn(
+                              "py-2 text-[10px] border rounded transition-all font-serif italic",
+                              char.handedness === opt 
+                                ? "bg-[#5a5a40] border-[#5a5a40] text-white" 
+                                : "bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
+                            )}
+                          >
+                            {opt}
                           </button>
                         ))}
                       </div>
@@ -625,61 +702,73 @@ export default function App() {
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-8"
             >
-              <section ref={dossierRef} className="parchment-card p-12 space-y-12 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#5a5a40]/5 rounded-full -mr-32 -mt-32 blur-3xl" />
-                
-                <div className="text-center space-y-2 relative">
-                  <div className="text-[10px] uppercase tracking-[0.3em] text-[#8e7f6d] font-bold">Character Dossier</div>
-                  <h2 className="text-5xl font-serif italic text-[#3d332a]">{char.name || 'Unnamed Adventurer'}</h2>
-                  <p className="text-lg text-[#8e7f6d] italic">{char.sex} — {char.ageCategory}</p>
+              <section ref={dossierRef} className="parchment-card p-12 space-y-8 relative overflow-hidden text-[#2c241e]">
+                <div className="text-center space-y-2">
+                  <h2 className="text-4xl font-gothic leading-tight">Here lies the notaries of a soul whose fate lies with Iron & Blood</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                    <div>
-                      <h3 className="text-xs uppercase tracking-widest font-bold text-[#8e7f6d] border-b border-[#e8dfd1] mb-4 pb-1">Aptitudes</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(char.aptitudes).map(([key, val]) => (
-                          <div key={key} className="flex justify-between items-center">
-                            <span className="capitalize text-sm font-medium">{key}</span>
-                            <span className="text-2xl font-serif">{val}</span>
-                          </div>
-                        ))}
-                      </div>
+                {/* Identity Section */}
+                <div className="grid grid-cols-2 gap-x-12 gap-y-2 border-b-2 border-dashed border-[#3d332a] pb-6">
+                  <div className="space-y-1">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Name:</span>
+                      <span className="font-serif italic">{char.name}</span>
                     </div>
-
-                    <div>
-                      <h3 className="text-xs uppercase tracking-widest font-bold text-[#8e7f6d] border-b border-[#e8dfd1] mb-4 pb-1">Assets</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm flex items-center gap-2"><Coins size={14} /> Wealth</span>
-                          <span className="text-lg font-serif">£{char.wealth}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm flex items-center gap-2"><RotateCcw size={14} /> Quick Reloads</span>
-                          <span className="text-lg font-serif">{char.quickReloadPoints}</span>
-                        </div>
-                      </div>
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Sex:</span>
+                      <span className="font-serif italic">{char.sex}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Age:</span>
+                      <span className="font-serif italic">{char.age} ({char.ageCategory})</span>
                     </div>
                   </div>
-
-                  <div>
-                    <h3 className="text-xs uppercase tracking-widest font-bold text-[#8e7f6d] border-b border-[#e8dfd1] mb-4 pb-1">Skills</h3>
-                    <div className="space-y-2">
-                      {char.skills.map((s, i) => (
-                        <div key={i} className="flex justify-between items-center border-b border-[#f5f2ed] py-1">
-                          <span className="text-sm italic">{s.name}</span>
-                          <span className="font-serif">{s.level}</span>
-                        </div>
-                      ))}
+                  <div className="space-y-1">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Ethnicity:</span>
+                      <span className="font-serif italic">{char.ethnicity}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Religion:</span>
+                      <span className="font-serif italic">{char.religion}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Handedness:</span>
+                      <span className="font-serif italic">{char.handedness}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                      <span className="font-bold uppercase text-[10px] opacity-70">Quick Reload:</span>
+                      <span className="font-serif italic">{char.quickReloadPoints}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-8 border-t border-[#e8dfd1] text-center">
-                  <p className="text-sm italic text-[#8e7f6d]">
-                    "Iron is the price of progress; Blood is the ink of history."
-                  </p>
+                {/* Aptitudes Section */}
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  {Object.entries(char.aptitudes).map(([key, val]) => (
+                    <div key={key} className="space-y-1">
+                      <div className="font-bold uppercase text-xs tracking-widest">{key}</div>
+                      <div className="text-3xl font-serif border-b-2 border-dotted border-[#3d332a] pb-1">{val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Skills Grid */}
+                <div className="grid grid-cols-3 gap-0 text-[11px] border-t-2 border-[#3d332a] pt-4">
+                  {[...char.skills].sort((a, b) => a.name.localeCompare(b.name)).map((skill, idx) => (
+                    <div key={idx} className={cn(
+                      "flex justify-between border-b border-dotted border-[#3d332a] px-2 py-1",
+                      idx % 3 !== 2 && "border-r border-dashed border-[#3d332a]"
+                    )}>
+                      <span className="truncate pr-1">{skill.name}:</span>
+                      <span className="font-bold">{skill.level}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-8 border-t-2 border-dashed border-[#3d332a] text-center">
+                  <h3 className="text-2xl font-gothic">Bloodline and Character Notes</h3>
+                  <div className="h-32 mt-4 border border-[#d1c7b7] bg-white/30 rounded-sm" />
                 </div>
               </section>
 
@@ -700,7 +789,7 @@ export default function App() {
       </main>
 
       <footer className="mt-24 text-center text-[10px] uppercase tracking-widest text-[#8e7f6d] opacity-50">
-        &copy; 1500—1875 Iron & Blood Historical Roleplaying
+        &copy; Iron & Blood
       </footer>
     </div>
   );

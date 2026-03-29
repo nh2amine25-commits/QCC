@@ -21,10 +21,14 @@ export interface Skill {
 export interface Character {
   name: string;
   sex: string;
+  age: number;
+  ethnicity: string;
+  religion: string;
   ageCategory: AgeCategory;
   aptitudes: Aptitudes;
   skills: Skill[];
   quickReloadPoints: number;
+  handedness: string;
   spentXP: number;
   totalXP: number;
   wealth: number;
