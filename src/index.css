@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Libre Baskerville", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-[#f2ede4] text-[#2c241e] font-sans min-h-screen;
+    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+  }
+  
+  h1, h2, h3, h4 {
+    @apply font-serif;
+  }
+}
+
+.parchment-card {
+  @apply bg-[#fdfaf6] border border-[#d1c7b7] shadow-lg rounded-sm relative;
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+}
+
+.parchment-card::before {
+  content: '';
+  @apply absolute inset-0 border-[12px] border-transparent pointer-events-none;
+  border-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0H40V40H0V0ZM2 2V38H38V2H2Z' fill='%23e8dfd1'/%3E%3C/svg%3E") 20 stretch;
+  opacity: 0.3;
+}
+
+.historical-btn {
+  @apply px-6 py-2 bg-[#3d332a] text-[#f2ede4] border border-[#2c241e] hover:bg-[#2c241e] transition-all font-serif italic disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-[#f5f2ed];
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-[#d1c7b7] rounded-full;
+}
