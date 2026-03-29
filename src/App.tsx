@@ -1,7 +1,20 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { 
+  Document, 
+  Packer, 
+  Paragraph, 
+  TextRun, 
+  Table, 
+  TableRow, 
+  TableCell, 
+  WidthType, 
+  BorderStyle, 
+  AlignmentType,
+  VerticalAlign,
+  HeadingLevel,
+  ShadingType
+} from 'docx';
 import { 
   User, 
   Shield, 
@@ -17,7 +30,8 @@ import {
   BookOpen,
   Sword,
   Dices,
-  Sparkles
+  Sparkles,
+  FileText
 } from 'lucide-react';
 import { AGE_TABLE, INITIAL_APTITUDES, MAX_APTITUDE, MAX_SKILL_LEVEL, XP_COSTS, STARTING_SKILLS, COMMON_SKILLS, HISTORICAL_NAMES, SEX_OPTIONS, ETHNICITY_OPTIONS, RELIGION_OPTIONS, HANDEDNESS_OPTIONS, ALIGNMENT_OPTIONS } from './constants';
 import { AgeCategory, Character, Skill } from './types';
@@ -45,7 +59,12 @@ export default function App() {
     spentXP: 0,
     totalXP: AGE_TABLE['Young Adult'].xp,
     wealth: AGE_TABLE['Young Adult'].wealth,
+    notes: '',
+    possessions: '',
   });
+
+  const [isAddSkillModalOpen, setIsAddSkillModalOpen] = useState(false);
+  const [newSkillSelection, setNewSkillSelection] = useState({ name: '', level: 0 });
 
   const generateRandomName = (sex?: string) => {
     const chosenSex = sex || SEX_OPTIONS[Math.floor(Math.random() * SEX_OPTIONS.length)];
@@ -265,36 +284,402 @@ export default function App() {
   const prevStep = () => setStep(s => s - 1);
 
   const downloadCharacterSheet = async () => {
-    if (!dossierRef.current) return;
-    
-    // Add a temporary class to ensure styling is correct for capture
-    dossierRef.current.classList.add('pdf-capture');
-    
     try {
-      // Wait a bit for the class to apply and layout to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const canvas = await html2canvas(dossierRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#f5eeda',
-        logging: false,
-        windowWidth: 800
+      const doc = new Document({
+        background: {
+          color: "f4f1ea",
+        },
+        sections: [{
+          properties: {
+            page: {
+              margin: {
+                top: 720,
+                right: 720,
+                bottom: 720,
+                left: 720,
+              },
+            },
+          },
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "IRON & BLOOD",
+                  bold: true,
+                  size: 48,
+                  color: "3d332a",
+                  font: "Georgia",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Character Dossier",
+                  italics: true,
+                  size: 24,
+                  color: "8e7f6d",
+                  font: "Georgia",
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 400 },
+            }),
+
+            // Identity Section
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                left: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                right: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                insideHorizontal: { style: BorderStyle.DOTTED, size: 1, color: "d1c7b7" },
+                insideVertical: { style: BorderStyle.NONE },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "NAME: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: char.name, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "ETHNICITY: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: char.ethnicity, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "SEX: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: char.sex, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "RELIGION: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: char.religion, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "AGE: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: `${char.age} (${char.ageCategory})`, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "HANDEDNESS: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: char.handedness, italics: true, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            new Paragraph({ text: "", spacing: { after: 400 } }),
+
+            // Aptitudes Section Header
+            new Paragraph({
+              children: [new TextRun({ text: "APTITUDES", bold: true, size: 24, color: "3d332a" })],
+              spacing: { after: 200 },
+            }),
+
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                left: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                right: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                insideHorizontal: { style: BorderStyle.NONE },
+                insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+              },
+              rows: [
+                new TableRow({
+                  children: Object.keys(char.aptitudes).map(key => 
+                    new TableCell({
+                      width: { size: 100 / 6, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [new TextRun({ text: key.toUpperCase(), bold: true, size: 16, color: "8e7f6d" })],
+                        }),
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [new TextRun({ text: String(char.aptitudes[key as keyof typeof char.aptitudes]), size: 32, bold: true, color: "3d332a" })],
+                        }),
+                      ],
+                      verticalAlign: VerticalAlign.CENTER,
+                    })
+                  ),
+                }),
+              ],
+            }),
+
+            new Paragraph({ text: "", spacing: { after: 400 } }),
+
+            // Skills Section
+            new Paragraph({
+              children: [new TextRun({ text: "TRAINED SKILLS", bold: true, size: 24, color: "3d332a" })],
+              border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "3d332a" } },
+              spacing: { after: 200 },
+            }),
+
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+                insideHorizontal: { style: BorderStyle.NONE },
+                insideVertical: { style: BorderStyle.NONE },
+              },
+              rows: Array.from({ length: Math.ceil(char.skills.length / 3) }).map((_, rowIndex) => {
+                const rowSkills = [...char.skills]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .slice(rowIndex * 3, rowIndex * 3 + 3);
+                
+                return new TableRow({
+                  children: [0, 1, 2].map(colIndex => {
+                    const skill = rowSkills[colIndex];
+                    return new TableCell({
+                      width: { size: 33.33, type: WidthType.PERCENTAGE },
+                      shading: skill ? { fill: "ffffff", type: ShadingType.CLEAR } : undefined,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: skill ? `${skill.name}: ` : "", size: 18, color: "3d332a" }),
+                            new TextRun({ text: skill ? String(skill.level) : "", bold: true, size: 18, color: "3d332a" }),
+                          ],
+                          spacing: { before: 50, after: 50 },
+                        }),
+                      ],
+                      borders: {
+                        top: { style: BorderStyle.NONE },
+                        bottom: { style: BorderStyle.NONE },
+                        left: { style: BorderStyle.NONE },
+                        right: { style: BorderStyle.NONE },
+                      },
+                    });
+                  }),
+                });
+              }),
+            }),
+
+            new Paragraph({ text: "", spacing: { after: 400 } }),
+
+            // Combat Section
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                left: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                right: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                insideHorizontal: { style: BorderStyle.NONE },
+                insideVertical: { style: BorderStyle.NONE },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "QUICK RELOAD POINTS: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: String(char.quickReloadPoints), size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "REMAINING XP: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: String(char.totalXP - char.spentXP), size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 100, type: WidthType.PERCENTAGE },
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: "WEALTH: ", bold: true, size: 20, color: "3d332a" }),
+                            new TextRun({ text: `£${char.wealth}`, size: 20, color: "3d332a" }),
+                          ],
+                          spacing: { before: 100, after: 100 },
+                        }),
+                      ],
+                      columnSpan: 2,
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            new Paragraph({ text: "", spacing: { after: 400 } }),
+
+            // Notes Section
+            new Paragraph({
+              children: [new TextRun({ text: "BLOODLINE AND CHARACTER NOTES", bold: true, size: 24, color: "3d332a" })],
+              spacing: { after: 200 },
+            }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                left: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                right: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ 
+                              text: char.notes || "No notes recorded.", 
+                              italics: true, 
+                              size: 20, 
+                              color: "3d332a" 
+                            })
+                          ],
+                          spacing: { before: 200, after: 200 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+
+            new Paragraph({ text: "", spacing: { after: 400 } }),
+
+            // Possessions Section
+            new Paragraph({
+              children: [new TextRun({ text: "POSSESSIONS AND EQUIPMENT", bold: true, size: 24, color: "3d332a" })],
+              spacing: { after: 200 },
+            }),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                left: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+                right: { style: BorderStyle.SINGLE, size: 1, color: "d1c7b7" },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      shading: { fill: "ffffff", type: ShadingType.CLEAR },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ 
+                              text: char.possessions || "No possessions recorded.", 
+                              italics: true, 
+                              size: 20, 
+                              color: "3d332a" 
+                            })
+                          ],
+                          spacing: { before: 200, after: 200 },
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }],
       });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
-      });
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / 2, canvas.height / 2);
-      pdf.save(`${char.name.replace(/\s+/g, '_') || 'Character'}_Iron_and_Blood.pdf`);
+
+      const blob = await Packer.toBlob(doc);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${char.name.replace(/\s+/g, '_') || 'Character'}_Iron_and_Blood.docx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
-    } finally {
-      dossierRef.current.classList.remove('pdf-capture');
+      console.error('Failed to generate DOCX:', error);
     }
   };
 
@@ -357,8 +742,8 @@ export default function App() {
                             className={cn(
                               "flex items-center justify-center rounded border transition-all text-sm font-serif italic py-2",
                               char.sex === option 
-                                ? "bg-[#5a5a40] border-[#5a5a40] text-white" 
-                                : "bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
+                                ? "bg-[#5a5a40] border-[#5a5a40] text-[#ffffff]" 
+                                : "bg-[#ffffff] border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
                             )}
                           >
                             {option}
@@ -383,7 +768,7 @@ export default function App() {
                         type="text" 
                         value={char.ethnicity}
                         onChange={e => setChar(prev => ({ ...prev, ethnicity: e.target.value }))}
-                        className="bg-white border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
+                        className="bg-[#ffffff] border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
                       />
                     </div>
 
@@ -401,7 +786,7 @@ export default function App() {
                         type="text" 
                         value={char.religion}
                         onChange={e => setChar(prev => ({ ...prev, religion: e.target.value }))}
-                        className="bg-white border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
+                        className="bg-[#ffffff] border border-[#e8dfd1] rounded p-2 font-serif italic text-sm outline-none focus:border-[#5a5a40]"
                       />
                     </div>
 
@@ -415,8 +800,8 @@ export default function App() {
                             className={cn(
                               "py-2 text-[10px] border rounded transition-all font-serif italic",
                               char.handedness === opt 
-                                ? "bg-[#5a5a40] border-[#5a5a40] text-white" 
-                                : "bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
+                                ? "bg-[#5a5a40] border-[#5a5a40] text-[#ffffff]" 
+                                : "bg-[#ffffff] border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
                             )}
                           >
                             {opt}
@@ -436,8 +821,8 @@ export default function App() {
                           className={cn(
                             "flex flex-col items-center p-4 rounded-lg border transition-all",
                             char.ageCategory === age 
-                              ? "bg-[#5a5a40] border-[#5a5a40] text-white shadow-md" 
-                              : "bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
+                              ? "bg-[#5a5a40] border-[#5a5a40] text-[#ffffff] shadow-md" 
+                              : "bg-[#ffffff] border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
                           )}
                         >
                           <span className="text-sm font-bold">{age}</span>
@@ -495,7 +880,7 @@ export default function App() {
                   <h2 className="text-2xl italic">II. Assign Aptitudes</h2>
                   <div className="text-right">
                     <span className="text-[10px] uppercase tracking-widest text-[#8e7f6d] block">Remaining Points</span>
-                    <span className={cn("text-2xl font-serif", remainingAptitudePoints === 0 ? "text-green-700" : "text-red-700")}>
+                    <span className={cn("text-2xl font-serif", remainingAptitudePoints === 0 ? "text-[#15803d]" : "text-[#b91c1c]")}>
                       {remainingAptitudePoints}
                     </span>
                   </div>
@@ -513,7 +898,7 @@ export default function App() {
                     { key: 'attractiveness', label: 'Attractiveness', icon: User },
                   ].map(({ key, label, icon: Icon }) => (
                     <div key={key} className="flex items-center gap-6 p-4 rounded-lg bg-[#fdfaf6] border border-[#e8dfd1]">
-                      <div className="p-3 bg-white rounded-full border border-[#e8dfd1]">
+                      <div className="p-3 bg-[#ffffff] rounded-full border border-[#e8dfd1]">
                         <Icon size={24} className="text-[#5a5a40]" />
                       </div>
                       <div className="flex-1">
@@ -522,14 +907,14 @@ export default function App() {
                           <div className="flex items-center gap-3">
                             <button 
                               onClick={() => updateAptitude(key as any, -1)}
-                              className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] transition-colors"
                             >
                               <Minus size={14} />
                             </button>
                             <span className="text-2xl font-serif w-8 text-center">{char.aptitudes[key as keyof typeof INITIAL_APTITUDES]}</span>
                             <button 
                               onClick={() => updateAptitude(key as any, 1)}
-                              className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] transition-colors"
                             >
                               <Plus size={14} />
                             </button>
@@ -585,7 +970,7 @@ export default function App() {
                             key={skillName}
                             onClick={() => toggleSkill(skillName)}
                             disabled={remainingXP < XP_COSTS.NEW_SKILL}
-                            className="text-left p-3 rounded-md border transition-all flex justify-between items-center group bg-white border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
+                            className="text-left p-3 rounded-md border transition-all flex justify-between items-center group bg-[#ffffff] border-[#e8dfd1] hover:border-[#5a5a40] text-[#5a5a40]"
                           >
                             <span className="text-sm italic">{skillName}</span>
                             <span className="text-[10px] font-bold opacity-60">{XP_COSTS.NEW_SKILL} XP</span>
@@ -613,7 +998,7 @@ export default function App() {
                               <button 
                                 onClick={() => decreaseSkill(idx)}
                                 disabled={skill.level <= 0}
-                                className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white disabled:opacity-30 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] disabled:opacity-30 transition-colors"
                               >
                                 <Minus size={14} />
                               </button>
@@ -621,7 +1006,7 @@ export default function App() {
                               <button 
                                 onClick={() => advanceSkill(idx)}
                                 disabled={remainingXP < XP_COSTS.ADVANCE_SKILL_5 || skill.level >= MAX_SKILL_LEVEL}
-                                className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white disabled:opacity-30 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] disabled:opacity-30 transition-colors"
                               >
                                 <Plus size={14} />
                               </button>
@@ -631,7 +1016,7 @@ export default function App() {
                             <span className="text-[10px] uppercase tracking-widest text-[#8e7f6d]">Advance: {XP_COSTS.ADVANCE_SKILL_5} XP</span>
                             <button 
                               onClick={() => toggleSkill(skill.name)}
-                              className="text-[10px] uppercase tracking-widest font-bold text-red-700 hover:underline"
+                              className="text-[10px] uppercase tracking-widest font-bold text-[#b91c1c] hover:underline"
                             >
                               Remove Skill
                             </button>
@@ -653,7 +1038,7 @@ export default function App() {
                           <button 
                             onClick={removeReloadPoint}
                             disabled={char.quickReloadPoints <= 0}
-                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white disabled:opacity-30 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] disabled:opacity-30 transition-colors"
                           >
                             <Minus size={14} />
                           </button>
@@ -661,7 +1046,7 @@ export default function App() {
                           <button 
                             onClick={addReloadPoint}
                             disabled={remainingXP < XP_COSTS.QUICK_RELOAD || char.quickReloadPoints >= 3}
-                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-white disabled:opacity-30 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-[#d1c7b7] hover:bg-[#ffffff] disabled:opacity-30 transition-colors"
                           >
                             <Plus size={14} />
                           </button>
@@ -672,7 +1057,7 @@ export default function App() {
                     {char.skills.length > 0 && (
                       <button 
                         onClick={resetXP}
-                        className="w-full py-2 text-[10px] uppercase tracking-widest font-bold text-[#8e7f6d] hover:text-red-700 flex items-center justify-center gap-2 border border-dashed border-[#d1c7b7] rounded"
+                        className="w-full py-2 text-[10px] uppercase tracking-widest font-bold text-[#8e7f6d] hover:text-[#b91c1c] flex items-center justify-center gap-2 border border-dashed border-[#d1c7b7] rounded"
                       >
                         <RotateCcw size={14} /> Reset All XP
                       </button>
@@ -710,35 +1095,73 @@ export default function App() {
                 {/* Identity Section */}
                 <div className="grid grid-cols-2 gap-x-12 gap-y-2 border-b-2 border-dashed border-[#3d332a] pb-6">
                   <div className="space-y-1">
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Name:</span>
-                      <span className="font-serif italic">{char.name}</span>
+                      <input 
+                        type="text"
+                        value={char.name}
+                        onChange={(e) => setChar(prev => ({ ...prev, name: e.target.value }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-full"
+                      />
                     </div>
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Sex:</span>
-                      <span className="font-serif italic">{char.sex}</span>
+                      <input 
+                        type="text"
+                        value={char.sex}
+                        onChange={(e) => setChar(prev => ({ ...prev, sex: e.target.value }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-full"
+                      />
                     </div>
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Age:</span>
-                      <span className="font-serif italic">{char.age} ({char.ageCategory})</span>
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="number"
+                          value={char.age}
+                          onChange={(e) => setChar(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
+                          className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-12"
+                        />
+                        <span className="font-serif italic opacity-50">({char.ageCategory})</span>
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Ethnicity:</span>
-                      <span className="font-serif italic">{char.ethnicity}</span>
+                      <input 
+                        type="text"
+                        value={char.ethnicity}
+                        onChange={(e) => setChar(prev => ({ ...prev, ethnicity: e.target.value }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-full"
+                      />
                     </div>
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Religion:</span>
-                      <span className="font-serif italic">{char.religion}</span>
+                      <input 
+                        type="text"
+                        value={char.religion}
+                        onChange={(e) => setChar(prev => ({ ...prev, religion: e.target.value }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-full"
+                      />
                     </div>
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Handedness:</span>
-                      <span className="font-serif italic">{char.handedness}</span>
+                      <input 
+                        type="text"
+                        value={char.handedness}
+                        onChange={(e) => setChar(prev => ({ ...prev, handedness: e.target.value }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-full"
+                      />
                     </div>
-                    <div className="flex justify-between border-b border-dotted border-[#3d332a]">
+                    <div className="flex justify-between border-b border-dotted border-[#3d332a] items-center">
                       <span className="font-bold uppercase text-[10px] opacity-70">Quick Reload:</span>
-                      <span className="font-serif italic">{char.quickReloadPoints}</span>
+                      <input 
+                        type="number"
+                        value={char.quickReloadPoints}
+                        onChange={(e) => setChar(prev => ({ ...prev, quickReloadPoints: parseInt(e.target.value) || 0 }))}
+                        className="font-serif italic bg-transparent border-none outline-none text-right focus:text-[#5a5a40] transition-colors w-12"
+                      />
                     </div>
                   </div>
                 </div>
@@ -748,39 +1171,248 @@ export default function App() {
                   {Object.entries(char.aptitudes).map(([key, val]) => (
                     <div key={key} className="space-y-1">
                       <div className="font-bold uppercase text-xs tracking-widest">{key}</div>
-                      <div className="text-3xl font-serif border-b-2 border-dotted border-[#3d332a] pb-1">{val}</div>
+                      <input 
+                        type="number"
+                        value={val}
+                        onChange={(e) => setChar(prev => ({
+                          ...prev,
+                          aptitudes: { ...prev.aptitudes, [key]: parseInt(e.target.value) || 0 }
+                        }))}
+                        className="text-3xl font-serif border-b-2 border-dotted border-[#3d332a] pb-1 bg-transparent text-center w-full outline-none focus:text-[#5a5a40] transition-colors"
+                      />
                     </div>
                   ))}
                 </div>
 
                 {/* Skills Grid */}
-                <div className="grid grid-cols-3 gap-0 text-[11px] border-t-2 border-[#3d332a] pt-4">
-                  {[...char.skills].sort((a, b) => a.name.localeCompare(b.name)).map((skill, idx) => (
-                    <div key={idx} className={cn(
-                      "flex justify-between border-b border-dotted border-[#3d332a] px-2 py-1",
-                      idx % 3 !== 2 && "border-r border-dashed border-[#3d332a]"
-                    )}>
-                      <span className="truncate pr-1">{skill.name}:</span>
-                      <span className="font-bold">{skill.level}</span>
+                <div className="space-y-4 border-t-2 border-[#3d332a] pt-4">
+                  <div className="grid grid-cols-3 gap-x-8 gap-y-1 text-[11px]">
+                    {[...char.skills].sort((a, b) => a.name.localeCompare(b.name)).map((skill, idx) => (
+                      <div key={idx} className="flex justify-between border-b border-dotted border-[#3d332a] py-1 items-center group">
+                        <div className="flex items-center gap-1 flex-1">
+                          <button 
+                            onClick={() => {
+                              const newSkills = char.skills.filter(s => s.name !== skill.name);
+                              setChar(prev => ({ ...prev, skills: newSkills }));
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-[#b91c1c] transition-opacity"
+                            title="Remove Skill"
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <input 
+                            type="text"
+                            value={skill.name}
+                            onChange={(e) => {
+                              const newSkills = [...char.skills];
+                              const skillIdx = char.skills.findIndex(s => s.name === skill.name);
+                              if (skillIdx !== -1) {
+                                newSkills[skillIdx].name = e.target.value;
+                                setChar(prev => ({ ...prev, skills: newSkills }));
+                              }
+                            }}
+                            className="truncate pr-1 bg-transparent border-none outline-none focus:text-[#5a5a40] transition-colors w-full"
+                          />
+                        </div>
+                        <input 
+                          type="number"
+                          value={skill.level}
+                          onChange={(e) => {
+                            const newSkills = [...char.skills];
+                            const skillIdx = char.skills.findIndex(s => s.name === skill.name);
+                            if (skillIdx !== -1) {
+                              newSkills[skillIdx].level = parseInt(e.target.value) || 0;
+                              setChar(prev => ({ ...prev, skills: newSkills }));
+                            }
+                          }}
+                          className="font-bold bg-transparent border-none outline-none text-right w-8 focus:text-[#5a5a40] transition-colors"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const availableSkills = COMMON_SKILLS.filter(name => !char.skills.some(s => s.name === name));
+                      if (availableSkills.length > 0) {
+                        setNewSkillSelection({ name: availableSkills[0], level: 0 });
+                      } else {
+                        setNewSkillSelection({ name: `New Skill ${char.skills.length + 1}`, level: 0 });
+                      }
+                      setIsAddSkillModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-[#8e7f6d] hover:text-[#5a5a40] transition-colors border border-dashed border-[#d1c7b7] px-3 py-1 rounded-sm"
+                  >
+                    <Plus size={12} /> Add New Skill
+                  </button>
+                </div>
+
+                <AnimatePresence>
+                  {isAddSkillModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="parchment-card max-w-2xl w-full p-8 shadow-2xl space-y-6 border-2 border-[#3d332a]"
+                      >
+                        <div className="flex justify-between items-center border-b border-[#d1c7b7] pb-4">
+                          <h3 className="text-xl font-gothic">Acquire New Skill</h3>
+                          <button onClick={() => setIsAddSkillModalOpen(false)} className="text-[#8e7f6d] hover:text-[#b91c1c]">
+                            <Minus size={20} />
+                          </button>
+                        </div>
+
+                        <div className="space-y-6">
+                          <div className="space-y-3">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-[#8e7f6d] flex items-center gap-2">
+                              <BookOpen size={14} /> Available Skills
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                              {COMMON_SKILLS.filter(name => !char.skills.some(s => s.name === name)).map(name => (
+                                <button
+                                  key={name}
+                                  onClick={() => setNewSkillSelection(prev => ({ ...prev, name }))}
+                                  className={cn(
+                                    "text-left p-3 rounded-md border transition-all flex flex-col gap-1 group",
+                                    newSkillSelection.name === name 
+                                      ? "bg-[#3d332a] text-[#f4f1ea] border-[#3d332a]" 
+                                      : "bg-white border-[#d1c7b7] text-[#3d332a] hover:border-[#5a5a40]"
+                                  )}
+                                >
+                                  <span className="text-sm font-serif italic">{name}</span>
+                                  <span className={cn(
+                                    "text-[9px] uppercase tracking-tighter transition-opacity h-3",
+                                    newSkillSelection.name === name ? "opacity-80" : "opacity-40 group-hover:opacity-60"
+                                  )}>
+                                  </span>
+                                </button>
+                              ))}
+                              {!COMMON_SKILLS.some(name => !char.skills.some(s => s.name === name)) && (
+                                <div className="col-span-2 text-center py-8 border border-dashed border-[#d1c7b7] rounded text-[#8e7f6d] italic text-xs">
+                                  All common skills have been acquired.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="text-[10px] uppercase tracking-widest font-bold text-[#8e7f6d] flex items-center gap-2">
+                              <Target size={14} /> Select Proficiency Level
+                            </label>
+                            <div className="grid grid-cols-4 gap-2">
+                              {[0, 5, 10, 15].map(lvl => (
+                                <button
+                                  key={lvl}
+                                  onClick={() => setNewSkillSelection(prev => ({ ...prev, level: lvl }))}
+                                  className={cn(
+                                    "py-2 border rounded font-serif transition-all flex flex-col items-center",
+                                    newSkillSelection.level === lvl 
+                                      ? "bg-[#5a5a40] text-white border-[#5a5a40]" 
+                                      : "bg-white border-[#d1c7b7] text-[#3d332a] hover:border-[#5a5a40]"
+                                  )}
+                                >
+                                  <span className="text-lg leading-none">{lvl}</span>
+                                  <span className="text-[8px] uppercase tracking-tighter opacity-60 mt-1">Level</span>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="p-3 bg-[#f5f2ed] rounded border border-[#d1c7b7] text-[11px] italic text-[#8e7f6d] flex gap-2 items-start min-h-[3rem]">
+                              <Scroll size={14} className="shrink-0 mt-0.5" />
+                              <span>Level {newSkillSelection.level} Mastery: </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                          <button 
+                            onClick={() => setIsAddSkillModalOpen(false)}
+                            className="flex-1 py-2 text-[10px] uppercase tracking-widest font-bold border border-[#d1c7b7] rounded hover:bg-[#f5f2ed]"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setChar(prev => ({
+                                ...prev,
+                                skills: [...prev.skills, { ...newSkillSelection }]
+                              }));
+                              setIsAddSkillModalOpen(false);
+                            }}
+                            className="flex-1 py-2 text-[10px] uppercase tracking-widest font-bold bg-[#3d332a] text-[#f4f1ea] rounded hover:opacity-90"
+                          >
+                            Add Skill
+                          </button>
+                        </div>
+                      </motion.div>
                     </div>
-                  ))}
+                  )}
+                </AnimatePresence>
+
+                {/* Resources Section */}
+                <div className="grid grid-cols-2 gap-8 border-t-2 border-[#3d332a] pt-6">
+                  <div className="text-center space-y-1">
+                    <div className="font-bold uppercase text-[10px] tracking-widest text-[#8e7f6d]">Remaining Experience</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <input 
+                        type="number"
+                        value={char.totalXP - char.spentXP}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          // Adjust totalXP to maintain the desired remainingXP
+                          setChar(prev => ({ ...prev, totalXP: prev.spentXP + val }));
+                        }}
+                        className="text-3xl font-serif bg-transparent border-none outline-none text-center w-32 focus:text-[#5a5a40] transition-colors"
+                      />
+                      <span className="text-[10px] uppercase opacity-40 font-bold">XP</span>
+                    </div>
+                  </div>
+                  <div className="text-center space-y-1">
+                    <div className="font-bold uppercase text-[10px] tracking-widest text-[#8e7f6d]">Current Wealth</div>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-xl font-serif text-[#8e7f6d]">£</span>
+                      <input 
+                        type="number"
+                        value={char.wealth}
+                        onChange={(e) => setChar(prev => ({ ...prev, wealth: parseInt(e.target.value) || 0 }))}
+                        className="text-3xl font-serif bg-transparent border-none outline-none text-center w-32 focus:text-[#5a5a40] transition-colors"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-8 border-t-2 border-dashed border-[#3d332a] text-center">
                   <h3 className="text-2xl font-gothic">Bloodline and Character Notes</h3>
-                  <div className="h-32 mt-4 border border-[#d1c7b7] bg-white/30 rounded-sm" />
+                  <textarea 
+                    value={char.notes}
+                    onChange={(e) => setChar(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Record your deeds, wounds, and lineage here..."
+                    className="w-full h-32 mt-4 border border-[#d1c7b7] bg-[rgba(255,255,255,0.3)] rounded-sm p-4 font-serif italic resize-none outline-none focus:border-[#5a5a40] transition-all placeholder:opacity-30"
+                  />
+                </div>
+
+                <div className="pt-8 border-t-2 border-dashed border-[#3d332a] text-center">
+                  <h3 className="text-2xl font-gothic">Possessions and Equipment</h3>
+                  <textarea 
+                    value={char.possessions}
+                    onChange={(e) => setChar(prev => ({ ...prev, possessions: e.target.value }))}
+                    placeholder="List your weapons, armor, and curiosities..."
+                    className="w-full h-32 mt-4 border border-[#d1c7b7] bg-[rgba(255,255,255,0.3)] rounded-sm p-4 font-serif italic resize-none outline-none focus:border-[#5a5a40] transition-all placeholder:opacity-30"
+                  />
                 </div>
               </section>
 
               <div className="flex justify-center gap-4">
-                <button onClick={() => setStep(0)} className="px-8 py-3 border border-[#d1c7b7] rounded-full text-sm font-bold uppercase tracking-widest hover:bg-white transition-all">
-                  Start Over
+                <button 
+                  onClick={prevStep}
+                  className="historical-btn flex items-center gap-2 bg-[#8e7f6d] border-[#8e7f6d]"
+                >
+                  <ChevronLeft size={18} /> Back
                 </button>
                 <button 
                   onClick={downloadCharacterSheet}
-                  className="historical-btn px-12"
+                  className="historical-btn flex items-center gap-2"
                 >
-                  Download Character Sheet
+                  <FileText size={18} /> Download Character Sheet (.docx)
                 </button>
               </div>
             </motion.div>

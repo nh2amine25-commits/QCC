@@ -32,4 +32,6 @@ export interface Character {
   spentXP: number;
   totalXP: number;
   wealth: number;
+  notes?: string;
+  possessions?: string;
 }
